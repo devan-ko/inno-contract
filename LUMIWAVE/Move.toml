@@ -1,0 +1,14 @@
+[package]
+name = "LUMIWAVE"
+version = "0.0.1"
+# upgrade 용 publisher 정보
+#published-at = "0xdcd42ba133041eb9e7ffb0082a8a8a513c6e699d3f42d6007a8019df1c86aa37"
+
+[dependencies]
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "testnet" }
+
+[addresses]
+lumiwave =  "0x0"
+
+
+
