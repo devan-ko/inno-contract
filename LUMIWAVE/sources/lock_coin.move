@@ -3,7 +3,7 @@
 
 module lumiwave::lock_coin{
     use sui::object::{Self, UID};
-    use sui::balance::{Self, Balance};
+    use sui::balance::Balance;
     use sui::tx_context::{Self, TxContext};
     use sui::transfer;
     use sui::clock::{Self};   
@@ -31,6 +31,7 @@ module lumiwave::lock_coin{
         transfer::transfer(lock_coin, recipient);
     }
 
+    #[allow(unused_variable, lint(self_transfer))]
     public fun unlock_wrapper<T> ( locked_coin: LockedCoin<T>, cur_clock: &clock::Clock, ctx: &mut TxContext ){
         let LockedCoin { id, lock_ts, unlock_ts, lock_blance } = locked_coin;
 

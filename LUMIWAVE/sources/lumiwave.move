@@ -9,12 +9,12 @@ module lumiwave::LWA {
     use sui::tx_context::{Self, TxContext};
     use sui::object::{Self, UID};
     use sui::deny_list::{DenyList};
-    use sui::bag::{Self, Bag};
-    use sui::vec_map::{Self, VecMap};
-    use sui::clock::{Self, Clock};
+    // use sui::bag::{Self, Bag};
+    use sui::vec_map::VecMap;
+    use sui::clock::Self;
     use sui::pay;
 
-    use lumiwave::vote::{Self, VoteStatus, Participant, VotingEvidence};
+    use lumiwave::vote::{Self, VoteStatus, Participant};
     use lumiwave::lock_coin::{Self};
 
     // Shared object to be recorded as voting progress
@@ -41,13 +41,14 @@ module lumiwave::LWA {
     const ErrNotVotePeriod: u64 = 5; // 투표 기간이 아님. It's not a voting period
     const ErrVotingAlreadyClosed: u64 = 6;  // 이미 개표가 완료되었습니다. The counting of votes has already been completed.
     const ErrAlreayReset: u64 = 7;  // 이미 reset되어 있다. It is already reset.
-    const ErrAlreadyVotingEnable: u64 = 8; // 이미 투표가 활성화 되어 있다. Voting is already active.
+    // const ErrAlreadyVotingEnable: u64 = 8; // 이미 투표가 활성화 되어 있다. Voting is already active.
     const ErrNotVoteCountingPeriod: u64 = 9; // 개표 가능한 기간이 아니다. It is not a countable period.
     const ErrInvalidStartEndTimestamp: u64 = 10; // 투표 시작 끝시간 유효성 검사 실패, Vote start end time validation failed
-    const ErrNotMinVoters: u64 = 11; // 최소 투표자 미달
+    // const ErrNotMinVoters: u64 = 11; // 최소 투표자 미달
 
     struct LWA has drop {}
 
+    #[allow(lint(share_owned))]
     fun init(witness: LWA, ctx: &mut TxContext) {
         let (treasury_cap, deny_cap,  metadata) = coin::create_regulated_currency(
            witness,
@@ -58,8 +59,6 @@ module lumiwave::LWA {
            option::some(url::new_unsafe_from_bytes(b"https://onbufffile.blob.core.windows.net/inno/live/icon/LUMIWAVE_Primary_black.png")), 
            ctx);
         transfer::public_freeze_object(metadata);
-
-        let owner = tx_context::sender(ctx);
 
         coin::mint_and_transfer<LWA>(&mut treasury_cap, 770075466000000000, tx_context::sender(ctx), ctx);
         transfer::public_transfer(treasury_cap, tx_context::sender(ctx));
@@ -106,7 +105,7 @@ module lumiwave::LWA {
         coin::mint_and_transfer(treasury_cap, amount, recipient, ctx);
     }
     // 코인 lock & 전송
-    public entry fun lock_coin_transfer(  treasury_cap: &mut TreasuryCap<LWA>, my_coin: Coin<LWA>, 
+    public entry fun lock_coin_transfer(_: &mut TreasuryCap<LWA>, my_coin: Coin<LWA>, 
                                     recipient: address, amount: u64, unlock_ts: u64, clock: &clock::Clock, ctx: &mut TxContext) {
         let new_coin = coin::split(&mut my_coin, amount, ctx);
         pay::keep(my_coin, ctx);
@@ -124,7 +123,7 @@ module lumiwave::LWA {
 
 
     // 투표 활성화, 비활성화
-    public entry fun enable_vote(treasury_cap: &mut TreasuryCap<LWA>, vote_board: &mut VoteBoard, is_enable: bool, vote_start_ts: u64, vote_end_ts: u64, ctx: &mut TxContext) {
+    public entry fun enable_vote(_: &mut TreasuryCap<LWA>, vote_board: &mut VoteBoard, is_enable: bool, vote_start_ts: u64, vote_end_ts: u64) {
         // 이미 활성화 되어 있다면 상태 변경을 할수 없다.
         assert!(vote::is_votestatus_enable(&vote_board.status)==false, ErrNotVotingEnable);
         // 시작, 끝 시간 유효성 검사
@@ -158,7 +157,7 @@ module lumiwave::LWA {
         // 개표 가능성 체크
         assert!(vote_board.result == VOTE_NONE, ErrVotingAlreadyClosed );
         // 개표 가능한 시간인지 체크, 최소 투표자 체크
-        let (is_valid_period, is_valid_total_cnt) = vote::votestatus_countable(&mut vote_board.status, &mut vote_board.participants, clock_vote);
+        let (is_valid_period, is_valid_total_cnt) = vote::votestatus_countable(&mut vote_board.status, &vote_board.participants, clock_vote);
         assert!(is_valid_period==true, ErrNotVoteCountingPeriod);
 
         if (is_valid_total_cnt == true){

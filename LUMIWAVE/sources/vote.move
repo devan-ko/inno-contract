@@ -48,6 +48,7 @@ module lumiwave::vote {
     } 
 
     // 투표 확인 NFT 생성
+    // Devan
     public fun make_VotingEvidence(ctx: &mut TxContext, is_agree: bool): VotingEvidence {
         VotingEvidence{
             id: object::new(ctx),
@@ -93,6 +94,7 @@ module lumiwave::vote {
     }
 
     // 투표 결과 확인
+    #[allow(unused_assignment)]
     public fun vote_counting(participants: &VecMap<address, Participant>): (u64, u64, u64, bool) {
         let (_, participants) = vec_map::into_keys_values(*participants);
         let i: u64 = 0;
