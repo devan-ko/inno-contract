@@ -100,7 +100,7 @@ module lumiwave::LWA {
 
 
     // 코인 추가 발행
-    public entry fun mint(treasury_cap: &mut TreasuryCap<LWA>, amount: u64, recipient: address, ctx: &mut TxContext) {
+    public fun mint(treasury_cap: &mut TreasuryCap<LWA>, amount: u64, recipient: address, ctx: &mut TxContext) {
         let new_supply = coin::total_supply<LWA>(treasury_cap) + amount;         // 새로운 공급량 미리 계산
         assert!(new_supply <= MaxSupply, ErrExceededMaxSupply); // 최대 공급량이 초과되는지 체크
         coin::mint_and_transfer(treasury_cap, amount, recipient, ctx);
