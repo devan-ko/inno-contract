@@ -10,21 +10,21 @@ module lumiwave::vote {
     use sui::clock::{Self};
     use sui::url::{Self, Url};
 
-    // 투표 상태 정보
+    // Vote status information
     struct VoteStatus has store, copy, drop {
-        enable: bool, // 투표 활성화 여부
-        start_ts: u64, // 투표 시작 시간 (ms)
-        end_ts: u64, // 투표 종료 시간 (ms)
+        enable: bool,   // Whether voting is enabled
+        start_ts: u64,  // Start time of voting (ms)
+        end_ts: u64,    // End time of voting (ms)
     }
 
-    // 투표 참가자 정보
+    // Participant information for voting
     struct Participant has store, copy, drop {
-        addr: address, // 투표자 지갑 주소
-        ts: u64, // 투표 참여 시간
-        is_agree: bool, // 창성, 반대
+        addr: address,  // Voter's wallet address
+        ts: u64,        // Timestamp of voting participation
+        is_agree: bool, // Agreement, disagreement
     }
 
-    // 투표 참가자 확인용 NFT
+    // NFT for confirming voting participation
     struct VotingEvidence has key, store {
         id: UID,
         name: String,
@@ -47,7 +47,7 @@ module lumiwave::vote {
         vec_map::empty<address, Participant>()
     } 
 
-    // 투표 확인 NFT 생성
+    // Create voting confirmation NFT
     public fun make_VotingEvidence(ctx: &mut TxContext, is_agree: bool): VotingEvidence {
         VotingEvidence{
             id: object::new(ctx),
@@ -61,22 +61,22 @@ module lumiwave::vote {
     }
 
     // === Public-View Functions ===
-    // 투표 가능한 상태인지
+    // Check if voting is enabled
     public fun is_votestatus_enable(vote_status: &VoteStatus): bool {  
         vote_status.enable
     } 
 
-    // 투표 참여 여부
+    // Check voting participation
     public fun is_voted(participants: &VecMap<address, Participant>, participant: address): bool{
        vec_map::contains<address, Participant>(participants, &participant)
     }
 
-    // 투표자 세부 정보
+    // Details of voters
     public fun participant(participant: &Participant): (address, u64, bool) {
         (participant.addr, participant.ts, participant.is_agree)
     }
 
-    // 투표 기간 체크
+    // Check voting period
     public fun votestatus_period_check(vote_status: &mut VoteStatus, clock_vote: &clock::Clock): bool {
         let cur_ts = clock::timestamp_ms(clock_vote);
         if (cur_ts >= vote_status.start_ts && cur_ts <= vote_status.end_ts ) {
@@ -86,13 +86,13 @@ module lumiwave::vote {
         }
     }
 
-    // 개표 가능 여부 체크
+    // Check if voting is countable
     public fun votestatus_countable(vote_status: &mut VoteStatus, participants: &VecMap<address, Participant>, clock_vote: &clock::Clock): (bool, bool) {
-        // 투표 종료시간이 지났는지 체크, 전체 투표자수가 1천명 이상인지 체크
+        // Check if the voting end time has passed, and if the total number of voters is over 1,000
         ( vote_status.end_ts < clock::timestamp_ms(clock_vote), vec_map::size(participants) >= 1000 )
     }
 
-    // 투표 결과 확인
+    // Check voting results
     public fun vote_counting(participants: &VecMap<address, Participant>): (u64, u64, u64, bool) {
         let (_, participants) = vec_map::into_keys_values(*participants);
         let i: u64 = 0;
@@ -109,19 +109,19 @@ module lumiwave::vote {
         };
 
         let result: bool = false;
-        if ( agree_cnt * 2 < i ) { // 50 % 넘어야 찬성 통과
-            // 반대 통과
+        if ( agree_cnt * 2 < i ) { // Need more than 50% for agreement
+            // Opposition passed
             result = false;
         }else{
-            // 찬성 통과
+            // Agreement passed
             result = true;
         };
 
-        (agree_cnt, disagree_cnt, i, result)  // 찬성 수, 반대 수, 전체 투표자 수, 투표 결과
+        (agree_cnt, disagree_cnt, i, result)  // Number of agreements, number of disagreements, total number of voters, voting result
     }
 
     // === Public-Mutative Functions ===
-    // 투표 참여
+    // Participate in voting
     public fun voting(participants: &mut VecMap<address, Participant>, participant: address, clock_vote: &clock::Clock, is_agree: bool) {
         let newParticipant = Participant{
             addr: participant,
@@ -131,7 +131,7 @@ module lumiwave::vote {
         vec_map::insert<address, Participant>(participants, participant, newParticipant);
     }
 
-    // 투표 활성화
+    // Enable voting
     public fun votestatus_enable(vote_status: &mut VoteStatus, enable: bool, vote_start_ts: u64, vote_end_ts: u64) {  
         vote_status.enable = enable;
         vote_status.start_ts = vote_start_ts;
