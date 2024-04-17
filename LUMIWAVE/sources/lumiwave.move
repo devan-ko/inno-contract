@@ -28,23 +28,23 @@ module lumiwave::LWA {
     const MaxSupply: u64 = 1000000000000000000;  // 1 Billion
 
     // vote result
-    const VOTE_NONE: u64 = 0;       // 미개표, no vote count
-    const VOTE_AGREE: u64 = 1;      // 찬성 개표, agreement
-    const VOTE_DISAGREE: u64 = 2;   // 반대 개표, Opposition
-    const VOTE_INVALIDITY: u64 = 3; // 투표 무효, Voting invalid
+    const VOTE_NONE: u64 = 0;       // No vote count
+    const VOTE_AGREE: u64 = 1;      // Agreement
+    const VOTE_DISAGREE: u64 = 2;   // Opposition
+    const VOTE_INVALIDITY: u64 = 3; // Voting invalid
 
     // err code
-    const ErrNotVotingEnable: u64 = 1; // 투표 가능한 상태가 아님. Not in a voting state
-    const ErrAlreadyVoters: u64 = 2; // 이미 투표 했음. You've already voted
-    const ErrNotHolder: u64 = 3; // 코인 홀더 아님. It's not a coin holder.
-    const ErrExceededMaxSupply: u64 = 4; // 최대 공급량 초과. Maximum supply exceeded
-    const ErrNotVotePeriod: u64 = 5; // 투표 기간이 아님. It's not a voting period
-    const ErrVotingAlreadyClosed: u64 = 6;  // 이미 개표가 완료되었습니다. The counting of votes has already been completed.
-    const ErrAlreayReset: u64 = 7;  // 이미 reset되어 있다. It is already reset.
-    const ErrAlreadyVotingEnable: u64 = 8; // 이미 투표가 활성화 되어 있다. Voting is already active.
-    const ErrNotVoteCountingPeriod: u64 = 9; // 개표 가능한 기간이 아니다. It is not a countable period.
-    const ErrInvalidStartEndTimestamp: u64 = 10; // 투표 시작 끝시간 유효성 검사 실패, Vote start end time validation failed
-    const ErrNotMinVoters: u64 = 11; // 최소 투표자 미달
+    const ErrNotVotingEnable: u64 = 1;              // Not in a voting state
+    const ErrAlreadyVoters: u64 = 2;                // You've already voted
+    const ErrNotHolder: u64 = 3;                    // It's not a coin holder.
+    const ErrExceededMaxSupply: u64 = 4;            // Maximum supply exceeded
+    const ErrNotVotePeriod: u64 = 5;                // It's not a voting period
+    const ErrVotingAlreadyClosed: u64 = 6;          // The counting of votes has already been completed.
+    const ErrAlreayReset: u64 = 7;                  // It is already reset.
+    const ErrAlreadyVotingEnable: u64 = 8;          // Voting is already active.
+    const ErrNotVoteCountingPeriod: u64 = 9;        // It is not a countable period.
+    const ErrInvalidStartEndTimestamp: u64 = 10;    // Vote start end time validation failed
+    const ErrNotMinVoters: u64 = 11;                // Not enough minimum voters
 
     struct LWA has drop {}
 
@@ -89,23 +89,23 @@ module lumiwave::LWA {
     }
 
     // === Public-Mutative Functions ===
-    // deny할 지갑 등록
+    // Register wallets to deny
     public entry fun add_deny(denylist: &mut DenyList, deny_cap: &mut DenyCap<LWA>, recipient: address, ctx: &mut TxContext) {
         coin::deny_list_add<LWA>( denylist, deny_cap, recipient, ctx)
     }
-    // deny 지갑 해제
+    // Release denied wallets
     public entry fun remove_deny(denylist: &mut DenyList, deny_cap: &mut DenyCap<LWA>, recipient: address, ctx: &mut TxContext){
         coin::deny_list_remove<LWA>(denylist, deny_cap, recipient, ctx)
     }
 
-
-    // 코인 추가 발행
+    // Additional coin issuance
     public fun mint(treasury_cap: &mut TreasuryCap<LWA>, amount: u64, recipient: address, ctx: &mut TxContext) {
-        let new_supply = coin::total_supply<LWA>(treasury_cap) + amount;         // 새로운 공급량 미리 계산
-        assert!(new_supply <= MaxSupply, ErrExceededMaxSupply); // 최대 공급량이 초과되는지 체크
+        let new_supply = coin::total_supply<LWA>(treasury_cap) + amount; // Calculate new supply in advance
+        assert!(new_supply <= MaxSupply, ErrExceededMaxSupply); // Check if maximum supply is exceeded
         coin::mint_and_transfer(treasury_cap, amount, recipient, ctx);
     }
-    // 코인 lock & 전송
+
+    // Locking coins & transfer
     public entry fun lock_coin_transfer(  treasury_cap: &mut TreasuryCap<LWA>, my_coin: Coin<LWA>, 
                                     recipient: address, amount: u64, unlock_ts: u64, clock: &clock::Clock, ctx: &mut TxContext) {
         let new_coin = coin::split(&mut my_coin, amount, ctx);
@@ -113,79 +113,84 @@ module lumiwave::LWA {
 
         lock_coin::make_lock_coin<LWA>(  recipient, clock::timestamp_ms(clock), unlock_ts, coin::into_balance(new_coin), ctx);
     }
-    // 코인 unlock
+
+    // Unlocking coins
     public entry fun unlock_coin( locked_coin: lock_coin::LockedCoin<LWA>, clock: &clock::Clock, ctx: &mut TxContext) {
         lock_coin::unlock_wrapper<LWA>( locked_coin, clock, ctx);
     }
-    // 코인 삭제
+
+    // Deleting coins
     public entry fun burn(treasury_cap: &mut TreasuryCap<LWA>, coin: Coin<LWA>) {
         coin::burn(treasury_cap, coin);
     }
 
 
-    // 투표 활성화, 비활성화
+    // Activating/Deactivating voting
     public entry fun enable_vote(treasury_cap: &mut TreasuryCap<LWA>, vote_board: &mut VoteBoard, is_enable: bool, vote_start_ts: u64, vote_end_ts: u64, ctx: &mut TxContext) {
-        // 이미 활성화 되어 있다면 상태 변경을 할수 없다.
+        // If already activated, cannot change the status.
         assert!(vote::is_votestatus_enable(&vote_board.status)==false, ErrNotVotingEnable);
-        // 시작, 끝 시간 유효성 검사
+
+        // Validate start and end time
         assert!(vote_start_ts < vote_end_ts, ErrInvalidStartEndTimestamp);
         vote::votestatus_enable( &mut vote_board.status, is_enable, vote_start_ts, vote_end_ts);
     }
-    // 투표 하기
+
+    // Voting
     public entry fun vote(vote_board: &mut VoteBoard, coin: &Coin<LWA>, clock_vote: &clock::Clock, is_agree: bool, ctx: &mut TxContext) {
-        // 투표 활상화 상태 체크
+        // Check if voting is enabled
         assert!(vote::is_votestatus_enable(&vote_board.status)==true, ErrNotVotingEnable);
 
-        // 투표 기간인지 체크
+        // Check if it's voting period
         assert!(vote::votestatus_period_check(&mut vote_board.status, clock_vote) == true, ErrNotVotePeriod);
 
-        // 이미 투표한 사람인지 체크
+        // Check if the sender has already voted
         assert!(!vote::is_voted(&vote_board.participants, tx_context::sender(ctx)), ErrAlreadyVoters);
 
-        // LWA 보유자 인지 체크
+        // Check if the sender is a LWA holder
         assert!(coin::value<LWA>(coin) != 0, ErrNotHolder );
 
-        // 투표 
-        // 추후 개표자 지갑에 보유중인 투표지를 개표하여 투표 결과를 확인한다.
+        // Vote
+        // Later, the voting evidence will be counted by the vote counters' wallets to confirm the voting result.
         vote::voting(&mut vote_board.participants,tx_context::sender(ctx), clock_vote, is_agree );
 
-        // 유져의 투표를 기록하고 유져에게 투표했음을 NFT로 발행하여 준다.
+        // Record the user's vote and issue an NFT to indicate the vote.
         let voting_evidence = vote::make_VotingEvidence(ctx, is_agree);
         transfer::public_transfer(voting_evidence, tx_context::sender(ctx));
     }
-    // 개표
+
+    // Vote counting
     public entry fun vote_counting(treasury_cap: &mut TreasuryCap<LWA>, vote_board: &mut VoteBoard, clock_vote: &clock::Clock, amount: u64,  ctx: &mut TxContext) {
-        // 개표 가능성 체크
+        // Check if vote counting is possible
         assert!(vote_board.result == VOTE_NONE, ErrVotingAlreadyClosed );
-        // 개표 가능한 시간인지 체크, 최소 투표자 체크
+        // Check if it's the counting period and if the minimum voters requirement is met
         let (is_valid_period, is_valid_total_cnt) = vote::votestatus_countable(&mut vote_board.status, &mut vote_board.participants, clock_vote);
         assert!(is_valid_period==true, ErrNotVoteCountingPeriod);
 
         if (is_valid_total_cnt == true){
-            // 전체 투표자 중에 50% 이상이면 찬성 처리(minting), 이하면 반대 처리
+            // If more than 50% of total voters, pass the vote (minting), otherwise fail
             let (_agree_cnt, _disagree_cnt, _total_cnt, result) = vote::vote_counting(&vote_board.participants);
 
             if ( result == true ) {
-                // 찬성 통과 후 추가 발행
+                // Minting after agreement
                 vote_board.result = VOTE_AGREE;
                 mint(treasury_cap, amount, tx_context::sender(ctx), ctx);
             }else{
-                // 반대 통과    
+                // Opposition passed    
                 vote_board.result = VOTE_DISAGREE;
             }
         }else{
-            // 최소 투표인원 부족으로 반대 통과    
+            // Fail due to insufficient voters    
             vote_board.result = VOTE_INVALIDITY;
         }
     }
 
-    // 완료된 개표 정보를 reset 해서 다음에 다시 투표 할수있도록 초기화
+    // Resetting the completed vote counting so that it can be voted again next time
     public entry fun vote_reset(_treasury_cap: &mut TreasuryCap<LWA>, vote_board: &mut VoteBoard, _ctx: &mut TxContext) {
-        // 투표 활상화 상태 체크
+        // Check if voting is enabled
         assert!(vote::is_votestatus_enable(&vote_board.status)==true, ErrNotVotingEnable);
-        // 개표가 이루어진 투표 인지 확인
+        // Check if it's a vote that has been counted
         assert!(vote_board.result != VOTE_NONE, ErrAlreayReset );
-        // 투표 데이터 초기화
+        // Reset voting data
         vote_board.status = vote::empty_status();
         vote_board.participants = vote::empty_participants();
         vote_board.result = VOTE_NONE;
