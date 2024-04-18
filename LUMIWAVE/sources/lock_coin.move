@@ -9,7 +9,7 @@ module lumiwave::lock_coin{
     use sui::clock::{Self};   
     use sui::coin;
 
-    struct LockedCoin<phantom T> has key, store {
+    struct LockedCoin<phantom T> has key {
         id: UID,
         lock_ts: u64,
         unlock_ts: u64,
