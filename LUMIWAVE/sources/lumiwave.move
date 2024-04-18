@@ -47,8 +47,7 @@ module lumiwave::LWA {
     // const ErrNotMinVoters: u64 = 11; // 최소 투표자 미달
 
     struct LWA has drop {}
-
-    #[allow(lint(share_owned))]
+    
     fun init(witness: LWA, ctx: &mut TxContext) {
         let (treasury_cap, deny_cap,  metadata) = coin::create_regulated_currency(
            witness,
@@ -64,18 +63,13 @@ module lumiwave::LWA {
         transfer::public_transfer(treasury_cap, tx_context::sender(ctx));
         transfer::public_transfer(deny_cap, tx_context::sender(ctx));
 
-        let vote = make_voteboard(ctx);
-        transfer::share_object(vote);
-    }
-
-    // === Private Functions ===
-    fun make_voteboard(ctx: &mut TxContext): VoteBoard {
-        VoteBoard{
+        let vote = VoteBoard{
             id: object::new(ctx),
             status: vote::empty_status(),
             participants: vote::empty_participants(),
             result: VOTE_NONE,
-        }
+        };
+        transfer::share_object(vote);
     }
 
     // === Public-View Functions ===
@@ -110,10 +104,10 @@ module lumiwave::LWA {
         let new_coin = coin::split(&mut my_coin, amount, ctx);
         pay::keep(my_coin, ctx);
 
-        lock_coin::make_lock_coin<LWA>(  recipient, clock::timestamp_ms(clock), unlock_ts, coin::into_balance(new_coin), ctx);
+        lock_coin::make_lock_coin<LWA>(recipient, clock::timestamp_ms(clock), unlock_ts, coin::into_balance(new_coin), ctx);
     }
     // 코인 unlock
-    public entry fun unlock_coin( locked_coin: lock_coin::LockedCoin<LWA>, clock: &clock::Clock, ctx: &mut TxContext) {
+    public entry fun unlock_coin(locked_coin: lock_coin::LockedCoin<LWA>, clock: &clock::Clock, ctx: &mut TxContext) {
         lock_coin::unlock_wrapper<LWA>( locked_coin, clock, ctx);
     }
     // 코인 삭제
@@ -179,7 +173,7 @@ module lumiwave::LWA {
     }
 
     // 완료된 개표 정보를 reset 해서 다음에 다시 투표 할수있도록 초기화
-    public entry fun vote_reset(_treasury_cap: &mut TreasuryCap<LWA>, vote_board: &mut VoteBoard, _ctx: &mut TxContext) {
+    public entry fun vote_reset(_: &mut TreasuryCap<LWA>, vote_board: &mut VoteBoard, _: &mut TxContext) {
         // 투표 활상화 상태 체크
         assert!(vote::is_votestatus_enable(&vote_board.status)==true, ErrNotVotingEnable);
         // 개표가 이루어진 투표 인지 확인
