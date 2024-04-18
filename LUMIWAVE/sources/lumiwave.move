@@ -90,11 +90,11 @@ module lumiwave::LWA {
 
     // === Public-Mutative Functions ===
     // Register wallets to deny
-    public entry fun add_deny(denylist: &mut DenyList, deny_cap: &mut DenyCap<LWA>, recipient: address, ctx: &mut TxContext) {
+    public fun add_deny(denylist: &mut DenyList, deny_cap: &mut DenyCap<LWA>, recipient: address, ctx: &mut TxContext) {
         coin::deny_list_add<LWA>( denylist, deny_cap, recipient, ctx)
     }
     // Release denied wallets
-    public entry fun remove_deny(denylist: &mut DenyList, deny_cap: &mut DenyCap<LWA>, recipient: address, ctx: &mut TxContext){
+    public fun remove_deny(denylist: &mut DenyList, deny_cap: &mut DenyCap<LWA>, recipient: address, ctx: &mut TxContext){
         coin::deny_list_remove<LWA>(denylist, deny_cap, recipient, ctx)
     }
 
@@ -106,7 +106,7 @@ module lumiwave::LWA {
     }
 
     // Locking coins & transfer
-    public entry fun lock_coin_transfer(  treasury_cap: &mut TreasuryCap<LWA>, my_coin: Coin<LWA>, 
+    public fun lock_coin_transfer(  treasury_cap: &mut TreasuryCap<LWA>, my_coin: Coin<LWA>, 
                                     recipient: address, amount: u64, unlock_ts: u64, clock: &clock::Clock, ctx: &mut TxContext) {
         let new_coin = coin::split(&mut my_coin, amount, ctx);
         pay::keep(my_coin, ctx);
@@ -115,18 +115,18 @@ module lumiwave::LWA {
     }
 
     // Unlocking coins
-    public entry fun unlock_coin( locked_coin: lock_coin::LockedCoin<LWA>, clock: &clock::Clock, ctx: &mut TxContext) {
+    public fun unlock_coin( locked_coin: lock_coin::LockedCoin<LWA>, clock: &clock::Clock, ctx: &mut TxContext) {
         lock_coin::unlock_wrapper<LWA>( locked_coin, clock, ctx);
     }
 
     // Deleting coins
-    public entry fun burn(treasury_cap: &mut TreasuryCap<LWA>, coin: Coin<LWA>) {
+    public fun burn(treasury_cap: &mut TreasuryCap<LWA>, coin: Coin<LWA>) {
         coin::burn(treasury_cap, coin);
     }
 
 
     // Activating/Deactivating voting
-    public entry fun enable_vote(treasury_cap: &mut TreasuryCap<LWA>, vote_board: &mut VoteBoard, is_enable: bool, vote_start_ts: u64, vote_end_ts: u64, ctx: &mut TxContext) {
+    public fun enable_vote(treasury_cap: &mut TreasuryCap<LWA>, vote_board: &mut VoteBoard, is_enable: bool, vote_start_ts: u64, vote_end_ts: u64, ctx: &mut TxContext) {
         // If already activated, cannot change the status.
         assert!(vote::is_votestatus_enable(&vote_board.status)==false, ErrNotVotingEnable);
 
@@ -136,7 +136,7 @@ module lumiwave::LWA {
     }
 
     // Voting
-    public entry fun vote(vote_board: &mut VoteBoard, coin: &Coin<LWA>, clock_vote: &clock::Clock, is_agree: bool, ctx: &mut TxContext) {
+    public fun vote(vote_board: &mut VoteBoard, coin: &Coin<LWA>, clock_vote: &clock::Clock, is_agree: bool, ctx: &mut TxContext) {
         // Check if voting is enabled
         assert!(vote::is_votestatus_enable(&vote_board.status)==true, ErrNotVotingEnable);
 
@@ -159,7 +159,7 @@ module lumiwave::LWA {
     }
 
     // Vote counting
-    public entry fun vote_counting(treasury_cap: &mut TreasuryCap<LWA>, vote_board: &mut VoteBoard, clock_vote: &clock::Clock, amount: u64,  ctx: &mut TxContext) {
+    public fun vote_counting(treasury_cap: &mut TreasuryCap<LWA>, vote_board: &mut VoteBoard, clock_vote: &clock::Clock, amount: u64,  ctx: &mut TxContext) {
         // Check if vote counting is possible
         assert!(vote_board.result == VOTE_NONE, ErrVotingAlreadyClosed );
         // Check if it's the counting period and if the minimum voters requirement is met
@@ -185,7 +185,7 @@ module lumiwave::LWA {
     }
 
     // Resetting the completed vote counting so that it can be voted again next time
-    public entry fun vote_reset(_treasury_cap: &mut TreasuryCap<LWA>, vote_board: &mut VoteBoard, _ctx: &mut TxContext) {
+    public fun vote_reset(_treasury_cap: &mut TreasuryCap<LWA>, vote_board: &mut VoteBoard, _ctx: &mut TxContext) {
         // Check if voting is enabled
         assert!(vote::is_votestatus_enable(&vote_board.status)==true, ErrNotVotingEnable);
         // Check if it's a vote that has been counted
