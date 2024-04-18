@@ -10,6 +10,8 @@ module lumiwave::vote {
     use sui::clock::{Self};
     use sui::url::{Self, Url};
 
+    friend lumiwave::LWA;
+
     // Vote status information
     struct VoteStatus has store, copy, drop {
         enable: bool,   // Whether voting is enabled
@@ -35,7 +37,7 @@ module lumiwave::vote {
         is_agree: bool,
     }
 
-    public fun empty_status(): VoteStatus{
+    public(friend) fun empty_status(): VoteStatus{
         VoteStatus{
             enable: false, 
             start_ts: 0,
@@ -43,12 +45,12 @@ module lumiwave::vote {
         }
     }
 
-    public fun empty_participants() :VecMap<address, Participant> {
+    public(friend) fun empty_participants() :VecMap<address, Participant> {
         vec_map::empty<address, Participant>()
     } 
 
     // Create voting confirmation NFT
-    public fun make_VotingEvidence(ctx: &mut TxContext, is_agree: bool): VotingEvidence {
+    public(friend) fun make_VotingEvidence(ctx: &mut TxContext, is_agree: bool): VotingEvidence {
         VotingEvidence{
             id: object::new(ctx),
             name: utf8(b"minting vote"),
@@ -62,12 +64,12 @@ module lumiwave::vote {
 
     // === Public-View Functions ===
     // Check if voting is enabled
-    public fun is_votestatus_enable(vote_status: &VoteStatus): bool {  
+    public(friend) fun is_votestatus_enable(vote_status: &VoteStatus): bool {  
         vote_status.enable
     } 
 
     // Check voting participation
-    public fun is_voted(participants: &VecMap<address, Participant>, participant: address): bool{
+    public(friend) fun is_voted(participants: &VecMap<address, Participant>, participant: address): bool{
        vec_map::contains<address, Participant>(participants, &participant)
     }
 
@@ -77,7 +79,7 @@ module lumiwave::vote {
     }
 
     // Check voting period
-    public fun votestatus_period_check(vote_status: &mut VoteStatus, clock_vote: &clock::Clock): bool {
+    public(friend) fun votestatus_period_check(vote_status: &mut VoteStatus, clock_vote: &clock::Clock): bool {
         let cur_ts = clock::timestamp_ms(clock_vote);
         if (cur_ts >= vote_status.start_ts && cur_ts <= vote_status.end_ts ) {
             true
@@ -87,13 +89,13 @@ module lumiwave::vote {
     }
 
     // Check if voting is countable
-    public fun votestatus_countable(vote_status: &mut VoteStatus, participants: &VecMap<address, Participant>, clock_vote: &clock::Clock): (bool, bool) {
+    public(friend) fun votestatus_countable(vote_status: &mut VoteStatus, participants: &VecMap<address, Participant>, clock_vote: &clock::Clock): (bool, bool) {
         // Check if the voting end time has passed, and if the total number of voters is over 1,000
         ( vote_status.end_ts < clock::timestamp_ms(clock_vote), vec_map::size(participants) >= 1000 )
     }
 
     // Check voting results
-    public fun vote_counting(participants: &VecMap<address, Participant>): (u64, u64, u64, bool) {
+    public(friend) fun vote_counting(participants: &VecMap<address, Participant>): (u64, u64, u64, bool) {
         let (_, participants) = vec_map::into_keys_values(*participants);
         let i: u64 = 0;
         let agree_cnt : u64 = 0;
@@ -122,7 +124,7 @@ module lumiwave::vote {
 
     // === Public-Mutative Functions ===
     // Participate in voting
-    public fun voting(participants: &mut VecMap<address, Participant>, participant: address, clock_vote: &clock::Clock, is_agree: bool) {
+    public(friend) fun voting(participants: &mut VecMap<address, Participant>, participant: address, clock_vote: &clock::Clock, is_agree: bool) {
         let newParticipant = Participant{
             addr: participant,
             ts: clock::timestamp_ms(clock_vote),
@@ -132,7 +134,7 @@ module lumiwave::vote {
     }
 
     // Enable voting
-    public fun votestatus_enable(vote_status: &mut VoteStatus, enable: bool, vote_start_ts: u64, vote_end_ts: u64) {  
+    public(friend) fun votestatus_enable(vote_status: &mut VoteStatus, enable: bool, vote_start_ts: u64, vote_end_ts: u64) {  
         vote_status.enable = enable;
         vote_status.start_ts = vote_start_ts;
         vote_status.end_ts = vote_end_ts;

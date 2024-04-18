@@ -9,6 +9,8 @@ module lumiwave::lock_coin{
     use sui::clock::{Self};   
     use sui::coin;
 
+    friend lumiwave::LWA;
+
     struct LockedCoin<phantom T> has key, store {
         id: UID,
         lock_ts: u64,
@@ -20,7 +22,7 @@ module lumiwave::lock_coin{
 
     // === Public-Mutative Functions ===
     // Lock coins and transfer
-    public fun make_lock_coin<T>( recipient: address, lock_ts: u64, unlock_ts: u64, balance: Balance<T>, ctx: &mut TxContext ) {
+    public(friend) fun make_lock_coin<T>( recipient: address, lock_ts: u64, unlock_ts: u64, balance: Balance<T>, ctx: &mut TxContext ) {
         let lock_coin = LockedCoin{
             id: object::new(ctx),
             lock_ts,
@@ -31,7 +33,7 @@ module lumiwave::lock_coin{
         transfer::transfer(lock_coin, recipient);
     }
 
-    public fun unlock_wrapper<T> ( locked_coin: LockedCoin<T>, cur_clock: &clock::Clock, ctx: &mut TxContext ){
+    public(friend) fun unlock_wrapper<T> ( locked_coin: LockedCoin<T>, cur_clock: &clock::Clock, ctx: &mut TxContext ){
         let LockedCoin { id, lock_ts, unlock_ts, lock_blance } = locked_coin;
 
         // Check time
