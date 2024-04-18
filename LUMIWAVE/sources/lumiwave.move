@@ -9,12 +9,11 @@ module lumiwave::LWA {
     use sui::tx_context::{Self, TxContext};
     use sui::object::{Self, UID};
     use sui::deny_list::{DenyList};
-    use sui::bag::{Self, Bag};
-    use sui::vec_map::{Self, VecMap};
-    use sui::clock::{Self, Clock};
+    use sui::vec_map::{VecMap};
+    use sui::clock::{Self};
     use sui::pay;
 
-    use lumiwave::vote::{Self, VoteStatus, Participant, VotingEvidence};
+    use lumiwave::vote::{Self, VoteStatus, Participant};
     use lumiwave::lock_coin::{Self};
 
     // Shared object to be recorded as voting progress
@@ -61,9 +60,9 @@ module lumiwave::LWA {
 
         let owner = tx_context::sender(ctx);
 
-        coin::mint_and_transfer<LWA>(&mut treasury_cap, 770075466000000000, tx_context::sender(ctx), ctx);
-        transfer::public_transfer(treasury_cap, tx_context::sender(ctx));
-        transfer::public_transfer(deny_cap, tx_context::sender(ctx));
+        coin::mint_and_transfer<LWA>(&mut treasury_cap, 770075466000000000, owner, ctx);
+        transfer::public_transfer(treasury_cap, owner);
+        transfer::public_transfer(deny_cap, owner);
 
         let vote = make_voteboard(ctx);
         transfer::share_object(vote);
@@ -90,11 +89,11 @@ module lumiwave::LWA {
 
     // === Public-Mutative Functions ===
     // Register wallets to deny
-    public entry fun add_deny(denylist: &mut DenyList, deny_cap: &mut DenyCap<LWA>, recipient: address, ctx: &mut TxContext) {
+    public fun add_deny(denylist: &mut DenyList, deny_cap: &mut DenyCap<LWA>, recipient: address, ctx: &mut TxContext) {
         coin::deny_list_add<LWA>( denylist, deny_cap, recipient, ctx)
     }
     // Release denied wallets
-    public entry fun remove_deny(denylist: &mut DenyList, deny_cap: &mut DenyCap<LWA>, recipient: address, ctx: &mut TxContext){
+    public fun remove_deny(denylist: &mut DenyList, deny_cap: &mut DenyCap<LWA>, recipient: address, ctx: &mut TxContext){
         coin::deny_list_remove<LWA>(denylist, deny_cap, recipient, ctx)
     }
 
@@ -106,8 +105,8 @@ module lumiwave::LWA {
     }
 
     // Locking coins & transfer
-    public entry fun lock_coin_transfer(  treasury_cap: &mut TreasuryCap<LWA>, my_coin: Coin<LWA>, 
-                                    recipient: address, amount: u64, unlock_ts: u64, clock: &clock::Clock, ctx: &mut TxContext) {
+    public fun lock_coin_transfer( treasury_cap: &mut TreasuryCap<LWA>, my_coin: Coin<LWA>, 
+                                   recipient: address, amount: u64, unlock_ts: u64, clock: &clock::Clock, ctx: &mut TxContext) {
         let new_coin = coin::split(&mut my_coin, amount, ctx);
         pay::keep(my_coin, ctx);
 
@@ -115,18 +114,18 @@ module lumiwave::LWA {
     }
 
     // Unlocking coins
-    public entry fun unlock_coin( locked_coin: lock_coin::LockedCoin<LWA>, clock: &clock::Clock, ctx: &mut TxContext) {
+    public fun unlock_coin( locked_coin: lock_coin::LockedCoin<LWA>, clock: &clock::Clock, ctx: &mut TxContext) {
         lock_coin::unlock_wrapper<LWA>( locked_coin, clock, ctx);
     }
 
     // Deleting coins
-    public entry fun burn(treasury_cap: &mut TreasuryCap<LWA>, coin: Coin<LWA>) {
+    public fun burn(treasury_cap: &mut TreasuryCap<LWA>, coin: Coin<LWA>) {
         coin::burn(treasury_cap, coin);
     }
 
 
     // Activating/Deactivating voting
-    public entry fun enable_vote(treasury_cap: &mut TreasuryCap<LWA>, vote_board: &mut VoteBoard, is_enable: bool, vote_start_ts: u64, vote_end_ts: u64, ctx: &mut TxContext) {
+    public fun enable_vote(treasury_cap: &mut TreasuryCap<LWA>, vote_board: &mut VoteBoard, is_enable: bool, vote_start_ts: u64, vote_end_ts: u64, _ctx: &mut TxContext) {
         // If already activated, cannot change the status.
         assert!(vote::is_votestatus_enable(&vote_board.status)==false, ErrNotVotingEnable);
 
@@ -136,12 +135,12 @@ module lumiwave::LWA {
     }
 
     // Voting
-    public entry fun vote(vote_board: &mut VoteBoard, coin: &Coin<LWA>, clock_vote: &clock::Clock, is_agree: bool, ctx: &mut TxContext) {
+    public fun vote(vote_board: &mut VoteBoard, coin: &Coin<LWA>, clock_vote: &clock::Clock, is_agree: bool, ctx: &mut TxContext) {
         // Check if voting is enabled
         assert!(vote::is_votestatus_enable(&vote_board.status)==true, ErrNotVotingEnable);
 
         // Check if it's voting period
-        assert!(vote::votestatus_period_check(&mut vote_board.status, clock_vote) == true, ErrNotVotePeriod);
+        assert!(vote::votestatus_period_check(&vote_board.status, clock_vote) == true, ErrNotVotePeriod);
 
         // Check if the sender has already voted
         assert!(!vote::is_voted(&vote_board.participants, tx_context::sender(ctx)), ErrAlreadyVoters);
@@ -159,11 +158,11 @@ module lumiwave::LWA {
     }
 
     // Vote counting
-    public entry fun vote_counting(treasury_cap: &mut TreasuryCap<LWA>, vote_board: &mut VoteBoard, clock_vote: &clock::Clock, amount: u64,  ctx: &mut TxContext) {
+    public fun vote_counting(treasury_cap: &mut TreasuryCap<LWA>, vote_board: &mut VoteBoard, clock_vote: &clock::Clock, amount: u64,  ctx: &mut TxContext) {
         // Check if vote counting is possible
         assert!(vote_board.result == VOTE_NONE, ErrVotingAlreadyClosed );
         // Check if it's the counting period and if the minimum voters requirement is met
-        let (is_valid_period, is_valid_total_cnt) = vote::votestatus_countable(&mut vote_board.status, &mut vote_board.participants, clock_vote);
+        let (is_valid_period, is_valid_total_cnt) = vote::votestatus_countable(&vote_board.status, &vote_board.participants, clock_vote);
         assert!(is_valid_period==true, ErrNotVoteCountingPeriod);
 
         if (is_valid_total_cnt == true){
@@ -185,7 +184,7 @@ module lumiwave::LWA {
     }
 
     // Resetting the completed vote counting so that it can be voted again next time
-    public entry fun vote_reset(_treasury_cap: &mut TreasuryCap<LWA>, vote_board: &mut VoteBoard, _ctx: &mut TxContext) {
+    public fun vote_reset(_treasury_cap: &mut TreasuryCap<LWA>, vote_board: &mut VoteBoard, _ctx: &mut TxContext) {
         // Check if voting is enabled
         assert!(vote::is_votestatus_enable(&vote_board.status)==true, ErrNotVotingEnable);
         // Check if it's a vote that has been counted
