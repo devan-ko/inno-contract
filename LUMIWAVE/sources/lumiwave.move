@@ -10,7 +10,6 @@ module lumiwave::LWA {
     use sui::object::{Self, UID};
     use sui::deny_list::{DenyList};
     use sui::vec_map::{VecMap};
-    use std::vector;
     use sui::clock::{Self};
     use sui::pay;
 
@@ -44,10 +43,11 @@ module lumiwave::LWA {
     const ErrAlreadyVotingEnable: u64 = 8;          // Voting is already active.
     const ErrNotVoteCountingPeriod: u64 = 9;        // It is not a countable period.
     const ErrInvalidStartEndTimestamp: u64 = 10;    // Vote start end time validation failed
-    const ErrNotMinVoters: u64 = 11;                // Not enough minimum voters
+    //const ErrNotMinVoters: u64 = 11;                // Not enough minimum voters
 
     struct LWA has drop {}
 
+    #[allow(lint(share_owned))]
     fun init(witness: LWA, ctx: &mut TxContext) {
         let (treasury_cap, deny_cap,  metadata) = coin::create_regulated_currency(
            witness,
@@ -106,6 +106,7 @@ module lumiwave::LWA {
     }
 
     // Locking coins & transfer
+    #[allow(unused_variable)]
     public entry fun lock_coin_transfer( treasury_cap: &mut TreasuryCap<LWA>, my_coin: Coin<LWA>, 
                                    recipient: address, amount: u64, unlock_ts: u64, clock: &clock::Clock, ctx: &mut TxContext) {
         let new_coin = coin::split(&mut my_coin, amount, ctx);
@@ -126,9 +127,10 @@ module lumiwave::LWA {
 
 
     // Activating/Deactivating voting
+    #[allow(unused_variable)]
     public entry fun enable_vote(treasury_cap: &mut TreasuryCap<LWA>, vote_board: &mut VoteBoard, is_enable: bool, vote_start_ts: u64, vote_end_ts: u64, _ctx: &mut TxContext) {
         // If already activated, cannot change the status.
-        assert!(vote::is_votestatus_enable(&vote_board.status)==false, ErrNotVotingEnable);
+        assert!(vote::is_votestatus_enable(&vote_board.status)==false, ErrAlreadyVotingEnable);
 
         // Validate start and end time
         assert!(vote_start_ts < vote_end_ts, ErrInvalidStartEndTimestamp);
@@ -202,4 +204,8 @@ module lumiwave::LWA {
     //     transfer::public_transfer(splitcoin, tx_context::sender(ctx));
     //     pay::keep(my_coin, ctx);
     // }
+    #[test_only]
+    public fun init_for_testing(ctx: &mut TxContext) {
+        init(LWA {}, ctx)
+    }
 }

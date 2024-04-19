@@ -95,6 +95,7 @@ module lumiwave::vote {
     }
 
     // Check voting results
+    #[allow(unused_assignment)]
     public(friend) fun vote_counting(participants: &VecMap<address, Participant>): (u64, u64, u64, bool) {
         let (_, participants) = vec_map::into_keys_values(*participants);
         let i: u64 = 0;
