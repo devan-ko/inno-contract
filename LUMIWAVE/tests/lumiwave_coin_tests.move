@@ -5,8 +5,6 @@ module lumiwave::LWA_coin_tests {
     use sui::deny_list;
     use sui::clock;
     use lumiwave::lock_coin::{Self};
-    //use sui::balance;
-
     use lumiwave::LWA::{Self, LWA};
 
     // Additional minting test after initial minting
@@ -46,7 +44,7 @@ module lumiwave::LWA_coin_tests {
 
     // lock transfer test
     #[test]
-    public fun lock_transfer_test() {
+    public fun test_lock_transfer() {
         let user = @0xA;
         let receive_user = @0xB;
         let amount = 770075466000000000;
@@ -87,8 +85,9 @@ module lumiwave::LWA_coin_tests {
         test_scenario::end(scenario_val);
     }
 
+    // Add specific wallet deny, remove test
     #[test]
-    public fun deny_test() {
+    public fun test_deny_wallet() {
         let user = @0xA;
         let scenario_val = test_scenario::begin(@0);
         let scenario = &mut scenario_val;

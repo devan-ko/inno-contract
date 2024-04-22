@@ -63,6 +63,11 @@ module lumiwave::vote {
     }
 
     // === Public-View Functions ===
+    public fun voting_evidence_detail(voting_evidence: &VotingEvidence): (String, String, Url, Url, String, bool) {
+        (voting_evidence.name, voting_evidence.description, voting_evidence.project_url, voting_evidence.image_url, voting_evidence.creator, voting_evidence.is_agree)
+    }
+
+
     // Check if voting is enabled
     public(friend) fun is_votestatus_enable(vote_status: &VoteStatus): bool {  
         vote_status.enable

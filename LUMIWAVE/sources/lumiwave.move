@@ -88,6 +88,10 @@ module lumiwave::LWA {
         vote::is_voted(&vote_board.participants, participant)
     }
 
+    public fun vote_detail(vote_board: &VoteBoard): ( VoteStatus, VecMap<address, Participant>, u64) {
+        ( vote_board.status, vote_board.participants, vote_board.result )
+    }
+
     // === Public-Mutative Functions ===
     // Register wallets to deny
     public entry fun add_deny(denylist: &mut DenyList, deny_cap: &mut DenyCap<LWA>, recipient: address, ctx: &mut TxContext) {
