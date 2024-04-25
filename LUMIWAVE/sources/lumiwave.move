@@ -43,7 +43,7 @@ module lumiwave::LWA {
     const ErrAlreadyVotingEnable: u64 = 8;          // Voting is already active.
     const ErrNotVoteCountingPeriod: u64 = 9;        // It is not a countable period.
     const ErrInvalidStartEndTimestamp: u64 = 10;    // Vote start end time validation failed
-    //const ErrNotMinVoters: u64 = 11;                // Not enough minimum voters
+    const ErrInvalidpassingThreshold: u64 = 11;     // Not a valid passing threshold information
 
     struct LWA has drop {}
 
@@ -132,13 +132,15 @@ module lumiwave::LWA {
 
     // Activating/Deactivating voting
     #[allow(unused_variable)]
-    public entry fun enable_vote(treasury_cap: &mut TreasuryCap<LWA>, vote_board: &mut VoteBoard, is_enable: bool, vote_start_ts: u64, vote_end_ts: u64, _ctx: &mut TxContext) {
+    public entry fun enable_vote(treasury_cap: &mut TreasuryCap<LWA>, vote_board: &mut VoteBoard, is_enable: bool, vote_start_ts: u64, vote_end_ts: u64, 
+                                min_voting_count: u64, passing_threshold: u64, _ctx: &mut TxContext) {
         // If already activated, cannot change the status.
         assert!(vote::is_votestatus_enable(&vote_board.status)==false, ErrAlreadyVotingEnable);
-
+        // Check max value for passing_threshold 
+        assert!(passing_threshold <= 100, ErrInvalidpassingThreshold);
         // Validate start and end time
         assert!(vote_start_ts < vote_end_ts, ErrInvalidStartEndTimestamp);
-        vote::votestatus_enable( &mut vote_board.status, is_enable, vote_start_ts, vote_end_ts);
+        vote::votestatus_enable( &mut vote_board.status, is_enable, vote_start_ts, vote_end_ts, min_voting_count, passing_threshold);
     }
 
     // Voting
@@ -174,7 +176,7 @@ module lumiwave::LWA {
 
         if (is_valid_total_cnt == true){
             // If more than 50% of total voters, pass the vote (minting), otherwise fail
-            let (_agree_cnt, _disagree_cnt, _total_cnt, result) = vote::vote_counting(&vote_board.participants);
+            let (_agree_cnt, _disagree_cnt, _total_cnt, result) = vote::vote_counting(&vote_board.participants, &vote_board.status);
 
             if ( result == true ) {
                 // Minting after agreement

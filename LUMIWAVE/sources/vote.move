@@ -14,9 +14,11 @@ module lumiwave::vote {
 
     // Vote status information
     struct VoteStatus has store, copy, drop {
-        enable: bool,   // Whether voting is enabled
-        start_ts: u64,  // Start time of voting (ms)
-        end_ts: u64,    // End time of voting (ms)
+        enable: bool,           // Whether voting is enabled
+        start_ts: u64,          // Start time of voting (ms)
+        end_ts: u64,            // End time of voting (ms)
+        min_voting_count: u64,  // minimum number of voters
+        passing_threshold: u64, // the percentage of votes cast in favor of
     }
 
     // Participant information for voting
@@ -42,6 +44,8 @@ module lumiwave::vote {
             enable: false, 
             start_ts: 0,
             end_ts: 0,
+            min_voting_count: 0,
+            passing_threshold : 0,
         }
     }
 
@@ -95,13 +99,13 @@ module lumiwave::vote {
 
     // Check if voting is countable
     public(friend) fun votestatus_countable(vote_status: &VoteStatus, participants: &VecMap<address, Participant>, clock_vote: &clock::Clock): (bool, bool) {
-        // Check if the voting end time has passed, and if the total number of voters is over 1,000
-        ( vote_status.end_ts < clock::timestamp_ms(clock_vote), vec_map::size(participants) >= 1000 )
+        // Check if the voting end time has passed, and if the total number of voters is over 'min_voting_count'
+        ( vote_status.end_ts < clock::timestamp_ms(clock_vote), vec_map::size(participants) >= vote_status.min_voting_count )
     }
 
     // Check voting results
     #[allow(unused_assignment)]
-    public(friend) fun vote_counting(participants: &VecMap<address, Participant>): (u64, u64, u64, bool) {
+    public(friend) fun vote_counting(participants: &VecMap<address, Participant>, vote_status: &VoteStatus,): (u64, u64, u64, bool) {
         let (_, participants) = vec_map::into_keys_values(*participants);
         let i: u64 = 0;
         let agree_cnt : u64 = 0;
@@ -117,7 +121,7 @@ module lumiwave::vote {
         };
 
         let result: bool = false;
-        if ( agree_cnt * 2 < i ) { // Need more than 50% for agreement
+        if ( agree_cnt * 100 / i < vote_status.passing_threshold ) { // Need more than 'passing_threshold'(%) for agreement
             // Opposition passed
             result = false;
         }else{
@@ -140,9 +144,12 @@ module lumiwave::vote {
     }
 
     // Enable voting
-    public(friend) fun votestatus_enable(vote_status: &mut VoteStatus, enable: bool, vote_start_ts: u64, vote_end_ts: u64) {  
+    public(friend) fun votestatus_enable(vote_status: &mut VoteStatus, enable: bool, vote_start_ts: u64, vote_end_ts: u64, 
+                    min_voting_count:u64, passing_threshold: u64) {  
         vote_status.enable = enable;
         vote_status.start_ts = vote_start_ts;
         vote_status.end_ts = vote_end_ts;
+        vote_status.min_voting_count = min_voting_count;
+        vote_status.passing_threshold = passing_threshold;
     } 
 }

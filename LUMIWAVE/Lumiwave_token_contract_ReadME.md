@@ -66,9 +66,11 @@
 ```Move
 // Vote status information
 struct VoteStatus has store, copy, drop {
-    enable: bool,   // Whether voting is enabled
-    start_ts: u64,  // Start time of voting (ms)
-    end_ts: u64,    // End time of voting (ms)
+    enable: bool,           // Whether voting is enabled
+    start_ts: u64,          // Start time of voting (ms)
+    end_ts: u64,            // End time of voting (ms)
+    min_voting_count: u64,  // minimum number of voters
+    passing_threshold: u64, // the percentage of votes cast in favor of
 }
 
 // Participant information for voting
