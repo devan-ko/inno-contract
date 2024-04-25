@@ -159,7 +159,7 @@ const MaxSupply: u64 = 1000000000000000000;  // 1 Billion
     const ErrAlreadyVotingEnable: u64 = 8;          // Voting is already active.
     const ErrNotVoteCountingPeriod: u64 = 9;        // It is not a countable period.
     const ErrInvalidStartEndTimestamp: u64 = 10;    // Vote start end time validation failed
-    const ErrNotMinVoters: u64 = 11;                // Not enough minimum voters
+    const ErrInvalidpassingThreshold: u64 = 11;     // Not a valid passing threshold information
 ```
 
 # EOD
