@@ -2,7 +2,7 @@
 ## Repo
 - [Repo is here](https://github.com/ONBUFF-IP-TOKEN/inno-contract) 
 
-## High leve requirement
+## High level requirement
 - Lumiwave is the token which is migrated from Ethereum to Sui, Previously called [ONIT](https://etherscan.io/token/0x410e731c2970Dce3AdD351064AcF5cE9E33FDBf0). 
 - This token contract is following regulated token from mentioned in [example in here](https://docs.sui.io/guides/developer/sui-101/create-coin/regulated). 
   - Token deploy entity will owned `TreasuryCap` & `DenyCap` for control issuing token, which is the Lumiwave. 
