@@ -59,8 +59,8 @@ module lumiwave::vote {
             id: object::new(ctx),
             name: utf8(b"minting vote"),
             description: utf8(b""),
-            project_url: url::new_unsafe_from_bytes(b"https://inno.onbuff.com"),
-            image_url: url::new_unsafe_from_bytes( b"https://onbufffile.blob.core.windows.net/inno/live/icon/LUMIWAVE_Primary_black.png"),
+            project_url: url::new_unsafe_from_bytes(b"https://lumiwavelab.com/"),
+            image_url: url::new_unsafe_from_bytes( b"https://innofile.blob.core.windows.net/inno/live/icon/LUMIWAVE_Primary_black.png"),
             creator: utf8(b""),
             is_agree,
         }
