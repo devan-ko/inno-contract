@@ -128,6 +128,10 @@ module lumiwave::LWA {
         vote::is_voted(&vote_board.participants, participant)
     }
 
+    // ===== Move code consultation =====
+    // 아래 코드는 VoteBoard 오브젝트의 status, participants, result를 반환합니다.
+    // participants는 address를 key로 하는 Participant 오브젝트의 VecMap 입니다.
+    // 구체적인 Participant 오브젝트의 구조를 구하기 위해 추가적인 View 함수가 필요할 수도 있습니다.
     public fun vote_detail(vote_board: &VoteBoard): ( VoteStatus, VecMap<address, Participant>, u64) {
         ( vote_board.status, vote_board.participants, vote_board.result )
     }
