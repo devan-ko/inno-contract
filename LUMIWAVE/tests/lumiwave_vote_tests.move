@@ -134,6 +134,7 @@ module lumiwave::LWA_vote_tests {
             clock::destroy_for_testing(clock);
         };
 
+        
         // vote reset
         {
             LWA::vote_reset(&mut treasury_cap, &mut vote_board, test_scenario::ctx(scenario));

@@ -23,7 +23,9 @@ module lumiwave::LWA {
         participants: VecMap<address, Participant>,
         result: u64, // result of the vote => 0:no vote count, 1:agreement, 2:Opposition, 3:Voting invalid
     }
-
+    /// ===== Move code consultation =====
+    /// Readability를 위해 000세자리 수로 표기하는 것을 권장합니다.
+    /// 예시 : 1000000000 => 1_000_000_000
     const MaxSupply: u64 = 1000000000000000000;  // 1 Billion
 
     // vote result
@@ -62,6 +64,44 @@ module lumiwave::LWA {
         let owner = tx_context::sender(ctx);
 
         coin::mint_and_transfer<LWA>(&mut treasury_cap, 770075466000000000, owner, ctx);
+        // ===== Move code consultation =====
+        // treasury_cap 오브젝트를 burn/freeze 하지 않는다면 Max supply 이상으로 발행 할 수 있습니다. 
+        // treasury_cap 오브젝트를 burn/freeze 하지 않는다면 treasury_cap을 보유한 account의 의도대로 코인을 burn 할 수 있습니다. 
+        // treasury_cap 오브젝트를 burn/freeze 하지 않는다면 MAX_SUPPLY를 우회 할 수 있습니다.  
+        // treasury_cap 오브젝트를 소유한 account가 탈취되거나 treasury_cap 오브젝트가 Onbuff가 관리하는 account 외 다른 account로 이전되면 의도치 않은 coin이 Max supply 이상으로 발행 될 수 있습니다.
+        // 아래 코드를 참조하시길 바랍니다. 
+        // https://github.com/MystenLabs/sui/blob/main/crates/sui-framework/packages/sui-framework/sources/coin.move#L268-L294
+        // /// Create a coin worth `value` and increase the total supply
+        // /// in `cap` accordingly.
+        // public fun mint<T>(
+        //     cap: &mut TreasuryCap<T>, value: u64, ctx: &mut TxContext,
+        // ): Coin<T> {
+        //     Coin {
+        //         id: object::new(ctx),
+        //         balance: cap.total_supply.increase_supply(value)
+        //     }
+        // }
+        // /// Mint some amount of T as a `Balance` and increase the total
+        // /// supply in `cap` accordingly.
+        // /// Aborts if `value` + `cap.total_supply` >= U64_MAX
+        // public fun mint_balance<T>(
+        //     cap: &mut TreasuryCap<T>, value: u64
+        // ): Balance<T> {
+        //     cap.total_supply.increase_supply(value)
+        // }
+        // /// Destroy the coin `c` and decrease the total supply in `cap`
+        // /// accordingly.
+        // public entry fun burn<T>(cap: &mut TreasuryCap<T>, c: Coin<T>): u64 {
+        //     let Coin { id, balance } = c;
+        //     id.delete();
+        //     cap.total_supply.decrease_supply(balance)
+        // } 
+        //     transfer::public_transfer(treasury_cap, owner);
+        //     transfer::public_transfer(deny_cap, owner);
+        //     let vote = make_voteboard(ctx);
+        //     transfer::share_object(vote);
+        // }
+    
         transfer::public_transfer(treasury_cap, owner);
         transfer::public_transfer(deny_cap, owner);
 
@@ -92,6 +132,50 @@ module lumiwave::LWA {
         ( vote_board.status, vote_board.participants, vote_board.result )
     }
 
+    // ===== Move code consultation =====
+    // coin::deny_list_add 함수는 아래에서 직접 바로 호출 할 수 있습니다. 
+    // https://suivision.xyz/package/0x0000000000000000000000000000000000000000000000000000000000000002?tab=Code
+    // 0x02::coin::deny_list_add
+    // 0x02::coin::deny_list_remove
+    // 참고 링크 : https://github.com/MystenLabs/sui/blob/main/crates/sui-framework/packages/sui-framework/sources/coin.move#L299-L333
+    /*
+    /// Adds the given address to the deny list, preventing it
+    /// from interacting with the specified coin type as an input to a transaction.
+    public fun deny_list_add<T>(
+       deny_list: &mut DenyList,
+       _deny_cap: &mut DenyCap<T>,
+       addr: address,
+       _ctx: &mut TxContext
+    ) {
+        let `type` =
+            type_name::into_string(type_name::get_with_original_ids<T>()).into_bytes();
+        deny_list::add(
+            deny_list,
+            DENY_LIST_COIN_INDEX,
+            `type`,
+            addr,
+        )
+    }
+
+    /// Removes an address from the deny list.
+    /// Aborts with `ENotFrozen` if the address is not already in the list.
+    public fun deny_list_remove<T>(
+       deny_list: &mut DenyList,
+       _deny_cap: &mut DenyCap<T>,
+       addr: address,
+       _ctx: &mut TxContext
+    ) {
+        let `type` =
+            type_name::into_string(type_name::get_with_original_ids<T>()).into_bytes();
+        deny_list::remove(
+            deny_list,
+            DENY_LIST_COIN_INDEX,
+            `type`,
+            addr,
+        )
+    }
+    */
+        
     // === Public-Mutative Functions ===
     // Register wallets to deny
     public entry fun add_deny(denylist: &mut DenyList, deny_cap: &mut DenyCap<LWA>, recipient: address, ctx: &mut TxContext) {
@@ -102,13 +186,53 @@ module lumiwave::LWA {
         coin::deny_list_remove<LWA>(denylist, deny_cap, recipient, ctx)
     }
 
+    // ===== Move code consultation =====
+    // treasury_cap 오브젝트를 burn/freeze 하지 않는다면 Max supply 이상으로 발행 할 수 있습니다. 
+    // treasury_cap 오브젝트를 burn/freeze 하지 않는다면 treasury_cap을 보유한 account의 의도대로 코인을 burn 할 수 있습니다. 
+    // treasury_cap 오브젝트를 burn/freeze 하지 않는다면 MAX_SUPPLY를 우회 할 수 있습니다.   
+    // treasury_cap 오브젝트를 소유한 account가 탈취되거나 treasury_cap 오브젝트가 Onbuff가 관리하는 account 외 다른 account로 이전되면 의도치 않은 coin이 Max supply 이상으로 발행 될 수 있습니다.
+    // 아래 코드를 참조하시길 바랍니다.
+    // 참고 링크 : https://github.com/MystenLabs/sui/blob/main/crates/sui-framework/packages/sui-framework/sources/coin.move#L268-L294
+    /*    
+    /// Create a coin worth `value` and increase the total supply
+    /// in `cap` accordingly.
+    public fun mint<T>(
+        cap: &mut TreasuryCap<T>, value: u64, ctx: &mut TxContext,
+    ): Coin<T> {
+        Coin {
+            id: object::new(ctx),
+            balance: cap.total_supply.increase_supply(value)
+        }
+    }
+
+    /// Mint some amount of T as a `Balance` and increase the total
+    /// supply in `cap` accordingly.
+    /// Aborts if `value` + `cap.total_supply` >= U64_MAX
+    public fun mint_balance<T>(
+        cap: &mut TreasuryCap<T>, value: u64
+    ): Balance<T> {
+        cap.total_supply.increase_supply(value)
+    }
+
+    /// Destroy the coin `c` and decrease the total supply in `cap`
+    /// accordingly.
+    public entry fun burn<T>(cap: &mut TreasuryCap<T>, c: Coin<T>): u64 {
+        let Coin { id, balance } = c;
+        id.delete();
+        cap.total_supply.decrease_supply(balance)
+    }
     // Additional coin issuance
     public fun mint(treasury_cap: &mut TreasuryCap<LWA>, amount: u64, recipient: address, ctx: &mut TxContext) {
         let new_supply = coin::total_supply<LWA>(treasury_cap) + amount; // Calculate new supply in advance
         assert!(new_supply <= MaxSupply, ErrExceededMaxSupply); // Check if maximum supply is exceeded
         coin::mint_and_transfer(treasury_cap, amount, recipient, ctx);
     }
+    */
 
+    // ===== Move code consultation =====
+    // 1. treasury_cap와 같이 사용되지 않는 Param이 있다면 _를 사용하여 표기합니다.
+    // 2. entry 키워드는 필요 없는것으로 보입니다. 
+    
     // Locking coins & transfer
     #[allow(unused_variable)]
     public entry fun lock_coin_transfer( treasury_cap: &mut TreasuryCap<LWA>, my_coin: Coin<LWA>, 
@@ -119,6 +243,8 @@ module lumiwave::LWA {
         lock_coin::make_lock_coin<LWA>(  recipient, clock::timestamp_ms(clock), unlock_ts, coin::into_balance(new_coin), ctx);
     }
 
+    // ===== Move code consultation =====
+    // entry 키워드는 필요 없는것으로 보입니다. 
     // Unlocking coins
     public entry fun unlock_coin( locked_coin: lock_coin::LockedCoin<LWA>, clock: &clock::Clock, ctx: &mut TxContext) {
         lock_coin::unlock_wrapper<LWA>( locked_coin, clock, ctx);
@@ -129,6 +255,9 @@ module lumiwave::LWA {
         coin::burn(treasury_cap, coin);
     }
 
+    
+    // ===== Move code consultation =====
+    // treasury_cap와 같이 사용되지 않는 Param이 있다면 _를 사용하여 표기합니다.
 
     // Activating/Deactivating voting
     #[allow(unused_variable)]
@@ -142,6 +271,9 @@ module lumiwave::LWA {
         assert!(vote_start_ts < vote_end_ts, ErrInvalidStartEndTimestamp);
         vote::votestatus_enable( &mut vote_board.status, is_enable, vote_start_ts, vote_end_ts, min_voting_count, passing_threshold);
     }
+
+    /// ===== Move code consultation =====
+    /// entry 키워드는 필요 없는것으로 보입니다. 
 
     // Voting
     public entry fun vote(vote_board: &mut VoteBoard, coin: &Coin<LWA>, clock_vote: &clock::Clock, is_agree: bool, ctx: &mut TxContext) {
@@ -165,6 +297,9 @@ module lumiwave::LWA {
         let voting_evidence = vote::make_VotingEvidence(ctx, is_agree);
         transfer::public_transfer(voting_evidence, tx_context::sender(ctx));
     }
+
+    /// ===== Move code consultation =====
+    /// entry 키워드는 필요 없는것으로 보입니다. 
 
     // Vote counting
     public entry fun vote_counting(treasury_cap: &mut TreasuryCap<LWA>, vote_board: &mut VoteBoard, clock_vote: &clock::Clock, amount: u64,  ctx: &mut TxContext) {
@@ -191,6 +326,9 @@ module lumiwave::LWA {
             vote_board.result = VOTE_INVALIDITY;
         }
     }
+
+    /// ===== Move code consultation =====
+    /// entry 키워드는 필요 없는것으로 보입니다. 
 
     // Resetting the completed vote counting so that it can be voted again next time
     public entry fun vote_reset(_treasury_cap: &mut TreasuryCap<LWA>, vote_board: &mut VoteBoard, _ctx: &mut TxContext) {

@@ -103,6 +103,10 @@ module lumiwave::vote {
         ( vote_status.end_ts < clock::timestamp_ms(clock_vote), vec_map::size(participants) >= vote_status.min_voting_count )
     }
 
+
+    // ===== Move code consultation =====
+    // result 같이 사용되지 않는 Param이 있다면 _를 사용하여 표기합니다.
+
     // Check voting results
     #[allow(unused_assignment)]
     public(friend) fun vote_counting(participants: &VecMap<address, Participant>, vote_status: &VoteStatus,): (u64, u64, u64, bool) {
