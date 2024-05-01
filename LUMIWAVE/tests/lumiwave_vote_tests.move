@@ -134,7 +134,9 @@ module lumiwave::LWA_vote_tests {
             clock::destroy_for_testing(clock);
         };
 
-        
+        // ===== Move code consultation =====
+        // 아래 테스트 코드는 상위 test_scenario가 끝나고 나서 실행되어야 하는 것으로 보입니다. 
+        // 만약 그렇다면 test_scenario::next_tx(scenario, user); 구문을 아래 테스트 코드 앞에 추가하는 것도 고려해보시길 바랍니다. 
         // vote reset
         {
             LWA::vote_reset(&mut treasury_cap, &mut vote_board, test_scenario::ctx(scenario));

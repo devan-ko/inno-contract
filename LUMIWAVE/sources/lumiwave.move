@@ -225,13 +225,14 @@ module lumiwave::LWA {
         id.delete();
         cap.total_supply.decrease_supply(balance)
     }
+    */
     // Additional coin issuance
     public fun mint(treasury_cap: &mut TreasuryCap<LWA>, amount: u64, recipient: address, ctx: &mut TxContext) {
         let new_supply = coin::total_supply<LWA>(treasury_cap) + amount; // Calculate new supply in advance
         assert!(new_supply <= MaxSupply, ErrExceededMaxSupply); // Check if maximum supply is exceeded
         coin::mint_and_transfer(treasury_cap, amount, recipient, ctx);
     }
-    */
+    
 
     // ===== Move code consultation =====
     // 1. treasury_cap와 같이 사용되지 않는 Param이 있다면 _를 사용하여 표기합니다.
