@@ -55,7 +55,7 @@ module lumiwave::LWA {
            b"LWA", 
            b"LUMIWAVE", 
            b"", 
-           option::some(url::new_unsafe_from_bytes(b"https://onbufffile.blob.core.windows.net/inno/live/icon/LUMIWAVE_Primary_black.png")), 
+           option::some(url::new_unsafe_from_bytes(b"https://innofile.blob.core.windows.net/inno/live/icon/LUMIWAVE_Primary_black.png")), 
            ctx);
         transfer::public_freeze_object(metadata);
 
